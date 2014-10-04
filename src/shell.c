@@ -9,6 +9,13 @@
 #include "task.h"
 #include "host.h"
 
+extern const unsigned char _sromfs;
+
+static uint32_t get_unaligned(const uint8_t* d){
+	return ((uint32_t)d[0]) | ((uint32_t)(d[1]<<8)) | ((uint32_t)(d[2]<<16)) | ((uint32_t)(d[3] <<24));
+}
+
+
 typedef struct {
 	const char *name;
 	cmdfunc *fptr;
@@ -60,6 +67,16 @@ int parse_command(char *str, char *argv[]){
 }
 
 void ls_command(int n, char *argv[]){
+
+	const uint8_t * meta;
+	meta = &_sromfs; 
+	while(get_unaligned(meta) && get_unaligned(meta+4))
+	{
+		fio_printf(1,"\r\n%s",(meta+8));
+		long int a = get_unaligned((meta+4));
+		meta = meta + (20+a);
+	}
+	fio_printf(1,"\r\n");
 
 }
 
