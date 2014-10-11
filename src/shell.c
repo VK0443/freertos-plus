@@ -32,6 +32,10 @@ void host_command(int, char **);
 void mmtest_command(int, char **);
 void test_command(int, char **);
 
+int fibonacci(int num);
+int myatoi(const char*);
+void myitoa(char* buf, int num);
+
 #define MKCL(n, d) {.name=#n, .fptr=n ## _command, .desc=d}
 
 cmdlist cl[]={
@@ -163,7 +167,7 @@ void test_command(int n, char *argv[]) {
 
     fio_printf(1, "\r\n");
     
-    handle = host_action(SYS_OPEN, "output/syslog", 8);
+   /* handle = host_action(SYS_OPEN, "output/syslog", 8);
     if(handle == -1) {
 	handle = host_action(SYS_SYSTEM,"mkdir output");
 	if(handle == -1)
@@ -172,10 +176,32 @@ void test_command(int n, char *argv[]) {
             return;
         }
         handle = host_action(SYS_OPEN, "output/syslog", 8);
+    }*/
+    handle = host_action(SYS_OPEN, "output/test", 8);
+    if(handle == -1) {
+        handle = host_action(SYS_SYSTEM,"mkdir output");
+        if(handle == -1)
+        {
+            fio_printf(1, "Open file error!\n\r");
+            return;
+        }
+        handle = host_action(SYS_OPEN, "output/test", 8);
     }
+    
+    int num = myatoi(argv[1]);
+    fio_printf(1,"Fibonacci number %d is %d\r\n", num, fibonacci(num));
+    
+    char *buffer = "Fibonacci number ";
+    char *buffer1 = " is " ;
+    char buffer3[] = {0};
+    myitoa(buffer3, fibonacci(num));
 
-    char *buffer = "Test host_write function which can write data to output/syslog\n";
+ //   char *buffer = ""
+  //  char *buffer = "Test host_write function which can write data to output/syslog\n";
     error = host_action(SYS_WRITE, handle, (void *)buffer, strlen(buffer));
+    error += host_action(SYS_WRITE, handle, (void *)argv[1], strlen(argv[1]));
+    error += host_action(SYS_WRITE, handle, (void *)buffer1, strlen(buffer1));
+    error += host_action(SYS_WRITE, handle, (void *)buffer3, strlen(buffer3));
     if(error != 0) {
         fio_printf(1, "Write file error! Remain %d bytes didn't write in the file.\n\r", error);
         host_action(SYS_CLOSE, handle);
@@ -195,3 +221,44 @@ cmdfunc *do_command(const char *cmd){
 	}
 	return NULL;	
 }
+
+int fibonacci(int num)
+{
+	if(num <= 0) return 0;
+	if(num <= 1) return 1;
+	return fibonacci(num-1) + fibonacci(num-2);
+}
+
+int myatoi(const char* str)
+{
+	int result = 0;
+	while(*str!=0){
+	result *= 10;
+	result += *str-'0';
+	str++;
+	}
+	return result;
+}
+
+void myitoa(char* buf, int num)
+{
+	// check how long the number is
+	int length = 0;
+	int i = 0;
+	for(i = 1 ; i<num; i *=10){
+	length += 1;
+	}
+	// max digit
+	int max = 1;
+	for(i=0; i<(length-1); i++){
+		max *= 10;
+	}
+	// translate to char
+	for(i=0; i<length; i++){
+	buf[i] = (char)(num/max)+'0';
+	num = num % max;
+	max = max / 10;
+	}
+	buf[i] = '\0';
+}	
+
